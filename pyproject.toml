@@ -1,0 +1,14 @@
+[project]
+name = "math-vision-adk-1226"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.127.0",
+    "google>=3.0.0",
+    "google-adk>=1.18.0",
+    "google-genai>=1.56.0",
+    "python-dotenv>=1.2.1",
+    "python-multipart>=0.0.21",
+]

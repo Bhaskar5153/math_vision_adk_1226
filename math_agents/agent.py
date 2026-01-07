@@ -24,6 +24,8 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner
 from google.adk.events import Event
 from pydantic import BaseModel, Field
+import asyncio
+import google.genai.errors
 
 # --- Constants ---
 APP_NAME = "math_animation_app"
@@ -142,6 +144,27 @@ class SupervisorAgent(BaseAgent):
             sub_agents=sub_agents_list, # Pass the sub_agents list directly
         )
 
+    
+    
+
+    async def run_with_retry(agent, ctx, max_retries=5, base_delay=2):
+        """Run an agent with retries on 503 UNAVAILABLE errors."""
+        for attempt in range(max_retries):
+            try:
+                async for event in agent.run_async(ctx):
+                    yield event
+                return  # success, exit
+            except google.genai.errors.ServerError as e:
+                if "UNAVAILABLE" in str(e):
+                    wait = base_delay * (2 ** attempt)
+                    logger.warning(f"{agent.name} overloaded, retrying in {wait}s (attempt {attempt+1}/{max_retries})")
+                    await asyncio.sleep(wait)
+                else:
+                    logger.error(f"{agent.name} failed with non-retryable error: {e}")
+                    raise
+        logger.error(f"{agent.name} failed after {max_retries} retries.")
+
+
     @override
     async def _run_async_impl(
         self, ctx: InvocationContext
@@ -172,7 +195,12 @@ class SupervisorAgent(BaseAgent):
         
 
         # 1. Initialize domain classify agent
-        async for event in self.domain_classify_agent.run_async(ctx):
+        # async for event in run_with_retry(self.domain_classify_agent, ctx):
+        #     logger.info(f"[{self.name}] Event from DomainClassifyAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
+        #     yield event
+
+        # use the run_with_retry method to call domain_classify_agent
+        async for event in SupervisorAgent.run_with_retry(self.domain_classify_agent, ctx):
             logger.info(f"[{self.name}] Event from DomainClassifyAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
             yield event
 
@@ -188,44 +216,49 @@ class SupervisorAgent(BaseAgent):
 
         logger.info(f"[{self.name}] Running SupervisorAgent...")
         if domain == "algebra":
-            async for event in self.algebra_agent.run_async(ctx):
+            async for event in SupervisorAgent.run_with_retry(self.algebra_agent, ctx):
                 logger.info(f"[{self.name}] Event from AlgebraAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
                 yield event
         elif domain == "geometry":
-            async for event in self.geometry_agent.run_async(ctx):
+            async for event in SupervisorAgent.run_with_retry(self.geometry_agent, ctx):
                 logger.info(f"[{self.name}] Event from GeometryAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
                 yield event
         elif domain == "calculus":
-            async for event in self.calculus_agent.run_async(ctx):
+            async for event in SupervisorAgent.run_with_retry(self.calculus_agent, ctx):
                 logger.info(f"[{self.name}] Event from CalculusAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
                 yield event
         elif domain == "probability":
-            async for event in self.probability_agent.run_async(ctx):
+            async for event in SupervisorAgent.run_with_retry(self.probability_agent, ctx):
                 logger.info(f"[{self.name}] Event from ProbabilityAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
                 yield event
         elif domain == "trigonometry":
-            async for event in self.trigonometry_agent.run_async(ctx):
+            async for event in SupervisorAgent.run_with_retry(self.trigonometry_agent, ctx):
                 logger.info(f"[{self.name}] Event from TrigonometryAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
                 yield event
         elif domain == "statistics":
-            async for event in self.statistics_agent.run_async(ctx):
+            async for event in SupervisorAgent.run_with_retry(self.statistics_agent, ctx):
                 logger.info(f"[{self.name}] Event from StatisticsAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
                 yield event
 
         # 3. Once the solution is obtained, proceed to animation and blender code generation. The solution is expected to be in ctx.session.state["solution"]
         solution = ctx.session.state.get("solution")
         logger.info(f"[{self.name}] Solution obtained: {solution}")
+        # solution = ctx.session.state.get("solution")
+        if not solution:
+            logger.error(f"[{self.name}] No solution found. Skipping animation/blender.")
+            return
+
 
         # 4. call animation agent and blender code agent, These agents run sequentially. they take the solution as input and generate animation story and blender code respectively.
-        async for event in self.animation_agent.run_async(ctx):
+        async for event in SupervisorAgent.run_with_retry(self.animation_agent, ctx):
             logger.info(f"[{self.name}] Event from AnimationAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
             yield event
 
-        async for event in self.blender_code_agent.run_async(ctx):
+        async for event in SupervisorAgent.run_with_retry(self.blender_code_agent, ctx):
             logger.info(f"[{self.name}] Event from BlenderCodeAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
             yield event
         # 5. Finally, run the sequential post-processing agent
-        async for event in self.sequential_agent.run_async(ctx):
+        async for event in SupervisorAgent.run_with_retry(self.sequential_agent, ctx):
             logger.info(f"[{self.name}] Event from SequentialAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
             yield event
 
@@ -258,7 +291,7 @@ geometry_agent = LlmAgent(
 calculus_agent = LlmAgent(
     name="CalculusAgent",
     model=MODEL,
-    instruction="""You are a calculus problem solver. Solve the following calculus problem: {{topic}}. Provide a step-by-step solution.""",
+    instruction="""You are a calculus problem solver. Solve the following calculus problem: {{topic}}. Provide a step-by-step solution. Respond only with the solution text.""",
     input_schema=None,
     output_key="solution",  # Key for storing output in session state
 )
@@ -290,7 +323,7 @@ statistics_agent = LlmAgent(
 animation_agent = LlmAgent(
     name="AnimationAgent",
     model=MODEL,
-    instruction="""You are an expert story generator for animations. Based on the math solution provided: {solution}, generate a creative story outline for an animation that illustrates the solution.""",
+    instruction="""You are an expert story generator for animations. Based on the math solution provided: {{solution}}, generate a creative story outline for an animation that illustrates the solution.""",
     input_schema=None,
     output_key="animation_story",  # Key for storing output in session state
 )
@@ -298,16 +331,21 @@ animation_agent = LlmAgent(
 blender_code_agent = LlmAgent(
     name="BlenderCodeAgent",
     model=MODEL,
-    instruction="""You generate Blender 4.4.3+ Python scripts for math animations.
+    instruction="""You generate Blender 5+ Python scripts for math animations.
 
 Strict rules:
-- Do NOT use bpy.ops.* or bpy.context.* selection-dependent patterns (e.g., active_object).
+- Always follow the official Blender Python API documentation and various documentation links provided below urls: 
+- https://docs.blender.org/api/current/, https://docs.blender.org/api/current/info_quickstart.html, https://docs.blender.org/api/current/bmesh.ops.html, https://docs.blender.org/api/current/info_api_reference.html, https://docs.blender.org/manual/en/latest/advanced/scripting/addon_tutorial.html#documentation-links, https://docs.blender.org/api/current/info_quickstart.html, https://docs.blender.org/api/current/bpy.data.html
+- Do NOT use bpy.ops.* or bpy.context.* selection-dependent patterns (e.g., active_object, selected_objects).
 - Use explicit datablock creation via bpy.data.*.new() and link with scene.collection.objects.link(obj), or a created child collection.
 - Idempotency: check for existing datablocks by name before creating. Remove or reuse safely.
 - Encapsulate all logic in main(), and call it with if __name__ == "__main__":.
 - Provide helper functions: ensure_collection(name), link_object(obj, collection=None), clean_scene().
 - Reference objects via variables or names; never rely on UI selection.
 - Set render and frame ranges explicitly; avoid defaults.
+- Only keyframe animatable properties documented in Blender API (e.g., object.location, object.rotation_euler, object.scale, material.diffuse_color, light.energy, camera.lens).
+- Never attempt to keyframe non-animatable properties (e.g., active_material_index, name, indices).
+- Wrap keyframe_insert calls in a safe helper that catches TypeError and skips invalid properties.
 - Output ONLY a single Python script inside one code block.
 
 Inputs:

@@ -24,8 +24,10 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner
 from google.adk.events import Event
 from pydantic import BaseModel, Field
+from math_agents.prompts import animation_prompt, blender_code_prompt
 import asyncio
 import google.genai.errors
+
 
 # --- Constants ---
 APP_NAME = "math_animation_app"
@@ -231,7 +233,7 @@ class SupervisorAgent(BaseAgent):
             async for event in SupervisorAgent.run_with_retry(self.probability_agent, ctx):
                 logger.info(f"[{self.name}] Event from ProbabilityAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
                 yield event
-        elif domain == "trigonometry":
+        elif domain == "trigonometry" or "Trigonometry":
             async for event in SupervisorAgent.run_with_retry(self.trigonometry_agent, ctx):
                 logger.info(f"[{self.name}] Event from TrigonometryAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
                 yield event
@@ -323,7 +325,7 @@ statistics_agent = LlmAgent(
 animation_agent = LlmAgent(
     name="AnimationAgent",
     model=MODEL,
-    instruction="""You are an expert story generator for animations. Based on the math solution provided: {{solution}}, generate a creative story outline for an animation that illustrates the solution.""",
+    instruction=animation_prompt(),
     input_schema=None,
     output_key="animation_story",  # Key for storing output in session state
 )
@@ -331,27 +333,7 @@ animation_agent = LlmAgent(
 blender_code_agent = LlmAgent(
     name="BlenderCodeAgent",
     model=MODEL,
-    instruction="""You generate Blender 5+ Python scripts for math animations.
-
-Strict rules:
-- Always follow the official Blender Python API documentation and various documentation links provided below urls: 
-- https://docs.blender.org/api/current/, https://docs.blender.org/api/current/info_quickstart.html, https://docs.blender.org/api/current/bmesh.ops.html, https://docs.blender.org/api/current/info_api_reference.html, https://docs.blender.org/manual/en/latest/advanced/scripting/addon_tutorial.html#documentation-links, https://docs.blender.org/api/current/info_quickstart.html, https://docs.blender.org/api/current/bpy.data.html
-- Do NOT use bpy.ops.* or bpy.context.* selection-dependent patterns (e.g., active_object, selected_objects).
-- Use explicit datablock creation via bpy.data.*.new() and link with scene.collection.objects.link(obj), or a created child collection.
-- Idempotency: check for existing datablocks by name before creating. Remove or reuse safely.
-- Encapsulate all logic in main(), and call it with if __name__ == "__main__":.
-- Provide helper functions: ensure_collection(name), link_object(obj, collection=None), clean_scene().
-- Reference objects via variables or names; never rely on UI selection.
-- Set render and frame ranges explicitly; avoid defaults.
-- Only keyframe animatable properties documented in Blender API (e.g., object.location, object.rotation_euler, object.scale, material.diffuse_color, light.energy, camera.lens).
-- Never attempt to keyframe non-animatable properties (e.g., active_material_index, name, indices).
-- Wrap keyframe_insert calls in a safe helper that catches TypeError and skips invalid properties.
-- Output ONLY a single Python script inside one code block.
-
-Inputs:
-- Use session state 'solution' and 'animation_story' for semantic guidance.
-- Derive clear naming: prefix objects/materials with a stable scene tag (e.g., 'Anim_' or domain-specific).
-""",
+    instruction=blender_code_prompt(),
     input_schema=None,
     output_key="blender_code",
 )

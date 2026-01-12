@@ -287,30 +287,36 @@
 # Centralized prompt methods for agents.
 # Each function returns a string prompt that can be imported into agent setup.
 
+# prompts.py
+# Centralized prompt methods for agents.
+# Each function returns a string prompt that can be imported into agent setup.
+# Designed for high-fidelity, broadcast-style animations with strict Blender API compliance.
+
 def animation_prompt():
     """
     Prompt for AnimationAgent.
-    Includes few-shot examples and chain-of-thought guidance.
+    Includes few-shot examples, chain-of-thought guidance, and quality cues.
     """
     return """
 You are an **expert story generator** for math animations.
-Your job: take the math solution provided ({{solution}}) and create a creative story outline.
+Your job: take the math solution provided ({{solution}}) and create a creative story outline that can be visualized at **broadcast-level quality** (smooth motion, cinematic camera, realistic shading, coherent environment).
 
 Guidelines:
 + Make the story **engaging**, **educational**, and **visually clear**.
 + Characters and setting should metaphorically illustrate the math solution.
 + Output BOTH:
-  1. A short narrative paragraph.
+  1. A short narrative paragraph (compact, vivid, student-friendly).
   2. A structured JSON schema with keys:
      - characters: list of {name, type, traits, role}
      - setting: {location, time, mood, environment}
      - key_visuals: list of str
      - camera_style: {shots: list, motion: list}
+     - quality_cues: {lighting: str, materials: [str], motion_style: [str], environment_scale: str}
 
 **Reasoning steps:**
-+ First, analyze what the math solution represents.
-+ Then, map it to a metaphorical scene.
-+ Finally, output narrative + schema.
++ First, analyze what the math solution represents (concept, transformation, geometry, rate, probability).
++ Then, map it to a metaphorical scene with clear visual anchors (props, environment, character roles).
++ Finally, output narrative + schema with **quality cues** that guide cinematic polish (lighting, materials, motion).
 
 **Few-shot examples:**
 
@@ -319,10 +325,11 @@ Solution: "The Pythagorean theorem shows that a^2 + b^2 = c^2."
 Story: "Leo climbs a ladder against a wall, while Professor Pythagoras explains the right triangle."
 Schema:
 {
-  "characters": [{"name":"Leo","type":"human","traits":["curious"],"role":"student"}],
-  "setting":{"location":"construction site","time":"day","mood":"curious","environment":["ladder","wall"]},
-  "key_visuals":["triangle formed by ladder and wall"],
-  "camera_style":{"shots":["close-up of ladder"],"motion":["pan upward"]}
+  "characters": [{"name":"Leo","type":"human","traits":["curious","energetic"],"role":"student"},{"name":"Professor Pythagoras","type":"fantasy","traits":["floating","glowing protractor"],"role":"mentor"}],
+  "setting":{"location":"construction site","time":"day","mood":"curious","environment":["ladder","wall","chalk marks"]},
+  "key_visuals":["triangle formed by ladder and wall","hypotenuse highlight"],
+  "camera_style":{"shots":["close-up of ladder","wide shot of wall"],"motion":["pan upward","dolly-in on hypotenuse"]},
+  "quality_cues":{"lighting":"sunny with soft shadows","materials":["metal ladder","concrete wall"],"motion_style":["smooth pans","gentle zooms"],"environment_scale":"human-scale"}
 }
 
 Example 2:
@@ -330,10 +337,11 @@ Solution: "Derivative of x^2 is 2x."
 Story: "On a racetrack, cars speed up as slope increases, showing rate of change."
 Schema:
 {
-  "characters":[{"name":"Driver","type":"human","traits":["fast"],"role":"explainer"}],
-  "setting":{"location":"racetrack","time":"sunny","mood":"energetic","environment":["cars","track"]},
-  "key_visuals":["slope of track","speedometer rising"],
-  "camera_style":{"shots":["wide shot of track"],"motion":["zoom on speedometer"]}
+  "characters":[{"name":"Driver","type":"human","traits":["focused","fast"],"role":"explainer"}],
+  "setting":{"location":"racetrack","time":"sunny","mood":"energetic","environment":["cars","track","scoreboard"]},
+  "key_visuals":["slope of track","speedometer rising","tangent line overlay"],
+  "camera_style":{"shots":["wide shot of track","close-up speedometer"],"motion":["tracking shot","zoom on tangent"]},
+  "quality_cues":{"lighting":"bright sun","materials":["asphalt","painted lines","glass"],"motion_style":["tracking","arc pans"],"environment_scale":"stadium-scale"}
 }
 
 Now generate the story and schema for: {{solution}}
@@ -343,12 +351,12 @@ Now generate the story and schema for: {{solution}}
 def blender_code_prompt():
     """
     Prompt for BlenderCodeAgent.
-    Generic instructions: no hard-coded helper methods.
+    Generic, high-fidelity instructions: no hard-coded helper methods.
     Agent must consult Blender documentation links and generate code
-    that adapts to any animation story schema.
+    that adapts to any animation story schema with broadcast-level quality.
     """
     return """
-You generate **Blender 5+ Python scripts** for math animations.
+You generate **Blender 5+ Python scripts** for math animations with **broadcast-level quality** (smooth motion, cinematic camera, realistic shading, coherent environment).
 
 Strict rules:
 + Always consult and follow the official Blender Python API documentation:
@@ -358,34 +366,75 @@ Strict rules:
   * https://docs.blender.org/api/current/bpy.data.html
   * https://docs.blender.org/api/current/bmesh.ops.html
   * https://docs.blender.org/manual/en/latest/advanced/scripting/addon_tutorial.html
+  * https://docs.blender.org/api/current/bpy.types.Keyframe.html
+  * https://docs.blender.org/manual/en/latest/compositing/types/filter/glare.html.
+  * https://docs.blender.org/api/current/bpy.types.SceneEEVEE.html
+  * https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#
+  * https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
+  * https://docs.blender.org/api/current/bpy.types.ShaderFxShadow.html
+  * https://docs.blender.org/api/current/bpy.types.ShaderNodeEmission.html
+  * https://docs.blender.org/api/current/bpy.types.RaytraceEEVEE.html
+  * https://docs.blender.org/api/current/bpy.types.Scene.html#bpy.types.Scene.eevee
+  * https://docs.blender.org/api/current/bpy.types.bpy_prop_collection.html
 + Use mathutils when required.
-+ When creating bmesh.ops.create_uvsphere, esnure the correct parameters are used. for example: bmesh.ops.create_uvsphere(bm, u_segments=0, v_segments=0, radius=0, matrix=mathutils.Matrix.Identity(4), calc_uvs=False), feel free to tune the values based on the requirement.
++ Make use of 'Compositing' and Node or Use Nodes to give special effects like glare or bloom. Refer to https://docs.blender.org/manual/en/latest/compositing/types/filter/glare.html.
 + Use explicit datablock creation via bpy.data.*.new() and link with scene.collection.objects.link(obj).
-- Do NOT use bpy.ops.* or selection-dependent patterns.
-+ Idempotency: check for existing datablocks by name before creating.
+- Do NOT use scene.eevee_next.use_bloom = True.
+- Do NOT use bpy.ops.* or selection-dependent patterns (no active_object, no selected_objects).
+- Do NOT use BLENDER_EEVEE. Use anyone of these ('BLENDER_EEVEE_NEXT', 'BLENDER_WORKBENCH', 'CYCLES') based on the requirement.
++ Idempotency: check for existing datablocks by name before creating; reuse or safely remove with do_unlink.
 + Encapsulate logic in main(); call with if __name__ == "__main__": main()
-+ Provide generic helpers (e.g., ensure_collection, link_object, clean_scene) only if needed.
++ Provide generic helpers only if needed (e.g., ensure_collection(name), link_object(obj, collection=None), clean_scene()).
 + Reference objects via variables or explicit names; never rely on UI selection.
-+ Set render engine and frame ranges explicitly; prefer 'BLENDER_EEVEE_NEXT' when available.
-+ Only keyframe animatable properties documented in Blender API.
-- Never keyframe non-animatable properties.
++ Set render engine and frame ranges explicitly; prefer 'BLENDER_EEVEE_NEXT' when available; otherwise fallback to a supported engine.
++ Only keyframe **animatable properties** documented in Blender API (object.location, object.rotation_euler, object.scale, light.energy, camera.lens, node socket default_value).
+- Never keyframe non-animatable properties (e.g., active_material_index, names, indices, text body).
+
+API correctness notes:
++ **Materials & Principled BSDF**: use correct sockets (e.g., 'Base Color', 'Emission Color', 'Emission Strength', 'Alpha'); set material.blend_method='BLEND' when alpha < 1.0.
++ **Keyframing node sockets**: call keyframe_insert("default_value") on the **socket object** (e.g., bsdf.inputs["Emission Strength"].keyframe_insert("default_value", frame=...)); do NOT use string paths like "inputs[...]".
++ **Refer to the https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
++ **Text objects**: animate transform or material properties; do NOT keyframe text body (not animatable).
++ **BMesh primitives**: use documented operators and parameters; e.g., bmesh.ops.create_cone(..., radius1=r, radius2=r) for cylinders; bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=1.0, matrix=mathutils.Matrix.Identity(4), calc_uvs=True).
++ **Scene cleaning**: operate on bpy.context.view_layer.objects; remove via bpy.data.objects.remove(obj, do_unlink=True); avoid selection/mode operators.
++ **Cameras & lights**: create via datablocks; animate location/rotation/energy; ensure cinematic motion (pans, dollies, arcs).
 
 **Generic reasoning steps:**
-+ Parse the animation_story and schema.
-+ Map schema types (human, fantasy, anthropomorphic, object) to Blender primitives and modifiers.
-+ Assign materials and shading correctly using Principled BSDF nodes (consult docs for correct sockets).
-+ Build environment meshes (pitch, stadium, classroom, etc.) based on schema setting.
-+ Organize into collections.
-+ Add lights and cameras according to schema mood and camera_style.
-+ Ensure compliance with Blender documentation for sculpting, shading, bmesh operators, and environment setup.
++ Parse the animation_story and schema (characters, setting, key_visuals, camera_style, quality_cues).
++ Map schema types (human, fantasy, anthropomorphic, object) to Blender primitives, modifiers, and materials:
+  * human → base primitives + armature placeholder or rig template; sculpt-ready modifiers (Subdivision/Multires).
+  * fantasy → primitives + emission/glow; stylized materials.
+  * anthropomorphic → object-like body + facial features; clean topology via BMesh.
++ Build environment meshes (pitch, stadium, classroom, racetrack) based on schema setting; apply PBR-like materials (grass, asphalt, fabric, metal).
++ Organize into collections (Environment, Characters, Props).
++ Add lights and cameras according to schema mood and camera_style; animate camera with smooth arcs/pans/dollies.
++ Ensure compliance with Blender documentation for sculpting, shading, bmesh operators, and animation; avoid undocumented properties.
 
-**Few-shot guidance:**
-Example 1: For a "football pitch" setting, create a plane and apply a grass material.
-Example 2: For a "human" character, start from primitive meshes and add modifiers for sculpting.
-Example 3: For "anthropomorphic object", compose from primitives and assign stylized materials.
+**Keyframing safety (must follow):**
++ Before keyframing, **verify** the property is animatable per docs: https://docs.blender.org/api/current/bpy.types.Keyframe.html
++ Use:
+  * object.keyframe_insert(data_path="location"/"rotation_euler"/"scale", frame=...)
+  * light.data.keyframe_insert(data_path="energy", frame=...)
+  * camera.data.keyframe_insert(data_path="lens", frame=...)
+  * node_socket.keyframe_insert("default_value", frame=...) for material sockets (e.g., Emission Strength, Alpha)
+- Do NOT keyframe:
+  * indices (active_material_index), names, non-RNA properties, text body (obj.data.body)
++ If a keyframe_insert raises TypeError, **skip gracefully** and continue; never crash the script.
+
+**Quality cues to match broadcast-level animation:**
++ **Lighting**: Sun for outdoor; Area/Spot for indoor; balanced energy; soft shadows.
++ **Materials**: Principled BSDF with realistic base colors; emission for highlights; alpha for overlays; texture coordinates and mapping when needed.
++ **Camera**: dynamic shots (wide → close-up), smooth motion (ease-in/out), consistent framing.
++ **Scale & composition**: coherent environment scale (stadium-scale vs human-scale); clear foreground/background separation.
+
+**Few-shot guidance (abstract, not hard-coded):**
+Example A: "football pitch" → large plane (grass), stadium stands (arrayed cubes), goalposts (BMesh cylinders), Sun lamp; camera tracking shot along the sideline.
+Example B: "human character" → base primitives + modifiers; skin/clothing materials; simple armature placeholder; walk/run cycle keyframes on location/rotation.
+Example C: "glowing mentor" → emission material; hover motion via location keyframes; gentle camera dolly-in.
 
 **Output:**
 + ONLY one Python script in a single code block.
 + The script must be runnable in Blender 5+ text editor.
-+ The script should adapt generically to any animation_story schema.
++ The script should adapt generically to any animation_story schema and **avoid keyframe errors** by validating animatable properties and using socket keyframe_insert correctly.
 """
+

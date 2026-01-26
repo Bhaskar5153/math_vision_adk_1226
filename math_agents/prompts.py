@@ -292,6 +292,121 @@
 # Each function returns a string prompt that can be imported into agent setup.
 # Designed for high-fidelity, broadcast-style animations with strict Blender API compliance.
 
+# def animation_prompt():
+#     """
+#     Prompt for AnimationAgent.
+#     Includes few-shot examples, chain-of-thought guidance, and quality cues.
+#     """
+#     return """
+# You are an **expert story generator** for math animations.
+# Your job: take the math solution provided ({{solution}}) and create a creative story outline that can be visualized at **broadcast-level quality** (smooth motion, cinematic camera, realistic shading, coherent environment).
+
+# Guidelines:
+# + Make the story **engaging**, **educational**, and **visually clear**.
+# + Characters and setting should metaphorically illustrate the math solution.
+# + Output BOTH:
+#   1. A short narrative paragraph (compact, vivid, student-friendly).
+#   2. A structured JSON schema with keys:
+#      - characters: list of {name, type, traits, role}
+#      - setting: {location, time, mood, environment}
+#      - key_visuals: list of str
+#      - camera_style: {shots: list, motion: list}
+#      - quality_cues: {lighting: str, materials: [str], motion_style: [str], environment_scale: str}
+
+# **Reasoning steps:**
+# + First, analyze what the math solution represents (concept, transformation, geometry, rate, probability).
+# + Then, map it to a metaphorical scene with clear visual anchors (props, environment, character roles).
+# + Finally, output narrative + schema with **quality cues** that guide cinematic polish (lighting, materials, motion).
+
+# **Few-shot examples:**
+
+# Example 1:
+# Solution: "The Pythagorean theorem shows that a^2 + b^2 = c^2."
+# Story: "Leo climbs a ladder against a wall, while Professor Pythagoras explains the right triangle."
+# Schema:
+# {
+#   "characters": [{"name":"Leo","type":"human","traits":["curious","energetic"],"role":"student"},{"name":"Professor Pythagoras","type":"fantasy","traits":["floating","glowing protractor"],"role":"mentor"}],
+#   "setting":{"location":"construction site","time":"day","mood":"curious","environment":["ladder","wall","chalk marks"]},
+#   "key_visuals":["triangle formed by ladder and wall","hypotenuse highlight"],
+#   "camera_style":{"shots":["close-up of ladder","wide shot of wall"],"motion":["pan upward","dolly-in on hypotenuse"]},
+#   "quality_cues":{"lighting":"sunny with soft shadows","materials":["metal ladder","concrete wall"],"motion_style":["smooth pans","gentle zooms"],"environment_scale":"human-scale"}
+# }
+
+# Example 2:
+# Solution: "Derivative of x^2 is 2x."
+# Story: "On a racetrack, cars speed up as slope increases, showing rate of change."
+# Schema:
+# {
+#   "characters":[{"name":"Driver","type":"human","traits":["focused","fast"],"role":"explainer"}],
+#   "setting":{"location":"racetrack","time":"sunny","mood":"energetic","environment":["cars","track","scoreboard"]},
+#   "key_visuals":["slope of track","speedometer rising","tangent line overlay"],
+#   "camera_style":{"shots":["wide shot of track","close-up speedometer"],"motion":["tracking shot","zoom on tangent"]},
+#   "quality_cues":{"lighting":"bright sun","materials":["asphalt","painted lines","glass"],"motion_style":["tracking","arc pans"],"environment_scale":"stadium-scale"}
+# }
+
+# Now generate the story and schema for: {{solution}}
+# """
+
+
+# def blender_code_prompt():
+#     """
+#     Prompt for BlenderCodeAgent.
+#     Generic, high-fidelity instructions: no hard-coded helper methods.
+#     Agent must consult Blender documentation links and generate code
+#     that adapts to any animation story schema with broadcast-level quality.
+#     """
+#     return """
+# You generate **Blender 5+ Python scripts** for math animations with **broadcast-level quality** (smooth motion, cinematic camera, realistic shading, coherent environment).
+
+# Strict rules:
+# + Always consult and follow the official Blender Python API documentation:
+#   * https://docs.blender.org/api/current/
+#   * https://docs.blender.org/api/current/info_quickstart.html
+#   * https://docs.blender.org/api/current/info_api_reference.html
+#   * https://docs.blender.org/api/current/bpy.data.html
+#   * https://docs.blender.org/api/current/bmesh.ops.html
+#   * https://docs.blender.org/manual/en/latest/advanced/scripting/addon_tutorial.html
+#   * https://docs.blender.org/api/current/bpy.types.Keyframe.html
+#   * https://docs.blender.org/manual/en/latest/compositing/types/filter/glare.html.
+#   * https://docs.blender.org/api/current/bpy.types.SceneEEVEE.html
+#   * https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#
+#   * https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
+#   * https://docs.blender.org/api/current/bpy.types.ShaderFxShadow.html
+#   * https://docs.blender.org/api/current/bpy.types.ShaderNodeEmission.html
+#   * https://docs.blender.org/api/current/bpy.types.RaytraceEEVEE.html
+#   * https://docs.blender.org/api/current/bpy.types.Scene.html#bpy.types.Scene.eevee
+#   * https://docs.blender.org/api/current/bpy.types.bpy_prop_collection.html
+#   * https://docs.blender.org/manual/en/latest/addons/rigging/rigify/index.html
+# + Ensure generate the rig for character model.
+# + Apply all kind of required settings to make it real in the animation.
+# + Use mathutils when required.
+# + Make use of 'Compositing' and Node or Use Nodes to give special effects like glare or bloom. Refer to https://docs.blender.org/manual/en/latest/compositing/types/filter/glare.html.
+# + Use explicit datablock creation via bpy.data.*.new() and link with scene.collection.objects.link(obj).
+# - Do NOT use scene.eevee_next as Scene object has no attribute 'eevee_next' instead use scene.eevee
+# - Do NOT use bpy.ops.* or selection-dependent patterns (no active_object, no selected_objects).
+# - Do NOT use BLENDER_EEVEE. Use anyone of these ('BLENDER_EEVEE_NEXT', 'BLENDER_WORKBENCH', 'CYCLES') based on the requirement.
+# - Use bpy.ops.mesh.primitive_cylinder_add(radius=1, depth=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1)) to create cylinder. Feel free to tune the parameters as per the requirement.
+# + Always add helper function like ensure_rgba to automatically expand 3‑tuples into 4‑tuples when neccessory.
+# + Simplify node clearing with nodes.clear()
+# + Use blend_method not shadow_method. shadow_method is no longer valid in Blender 4.x.
+# + obj.hide_render is just a Python bool property (True/False). You need to call .keyframe_insert() on the object, not on the boolean. The data_path argument tells Blender which property to keyframe: obj.keyframe_insert("hide_render", frame=...)
+# + Idempotency: check for existing datablocks by name before creating; reuse or safely remove with do_unlink.
+# + Encapsulate logic in main(); call with if __name__ == "__main__": main()
+# + Provide generic helpers only if needed (e.g., ensure_collection(name), link_object(obj, collection=None), clean_scene()).
+# + Reference objects via variables or explicit names; never rely on UI selection.
+# + Set render engine and frame ranges explicitly; prefer 'BLENDER_EEVEE_NEXT' when available; otherwise fallback to a supported engine.
+# + Only keyframe **animatable properties** documented in Blender API (object.location, object.rotation_euler, object.scale, light.energy, camera.lens, node socket default_value).
+# - Never keyframe non-animatable properties (e.g., active_material_index, names, indices, text body).
+
+# API correctness notes:
+# + **Materials & Principled BSDF**: use correct sockets (e.g., 'Base Color', 'Emission Color', 'Emission Strength', 'Alpha'); set material.blend_method='BLEND' when alpha < 1.0.
+# + **Keyframing node sockets**: call keyframe_insert("default_value") on the **socket object** (e.g., bsdf.inputs["Emission Strength"].keyframe_insert("default_value", frame=...)); do NOT use string paths like "inputs[...]".
+# + **Refer to the https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
+# + **Text objects**: animate transform or material properties; do NOT keyframe text body (not animatable).
+# + **BMesh primitives**: use documented operators and parameters; e.g., bmesh.ops.create_cone(..., radius1=r, radius2=r) for cylinders; bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=1.0, matrix=mathutils.Matrix.Identity(4), calc_uvs=True).
+# + **Scene cleaning**: operate on bpy.context.view_layer.objects; remove via bpy.data.objects.remove(obj, do_unlink=True); avoid selection/mode operators.
+# + **Cameras & lights**: create via datablocks; animate location/rotation/energy; ensure cinematic motion (pans, dollies, arcs).
+
 def animation_prompt():
     """
     Prompt for AnimationAgent.
@@ -367,21 +482,45 @@ Strict rules:
   * https://docs.blender.org/api/current/bmesh.ops.html
   * https://docs.blender.org/manual/en/latest/advanced/scripting/addon_tutorial.html
   * https://docs.blender.org/api/current/bpy.types.Keyframe.html
-  * https://docs.blender.org/manual/en/latest/compositing/types/filter/glare.html.
+  * https://docs.blender.org/manual/en/latest/compositing/types/filter/glare.html
   * https://docs.blender.org/api/current/bpy.types.SceneEEVEE.html
   * https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#
   * https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
   * https://docs.blender.org/api/current/bpy.types.ShaderFxShadow.html
   * https://docs.blender.org/api/current/bpy.types.ShaderNodeEmission.html
   * https://docs.blender.org/api/current/bpy.types.RaytraceEEVEE.html
-  * https://docs.blender.org/api/current/bpy.types.Scene.html#bpy.types.Scene.eevee
+  * https://docs.blender.org/api/current/bpy.types.Scene.html
   * https://docs.blender.org/api/current/bpy.types.bpy_prop_collection.html
+  * https://docs.blender.org/manual/en/latest/addons/rigging/rigify/index.html
++ Use Bones API to create and manipulate armatures for character rigs.
++ Use Armature modifier to bind mesh objects to the armature.
++ Ensure proper weight painting for realistic deformations during animation.
++ Use Constraints to control bone movements and create complex animations.
++ Create custom drivers for advanced control over animations.
++ Use blender add-ons like Rigify for generating character rigs.
++ Use character models compatible with the rig.
++ Ensure the character in the story is represented by the rigged model.
++ Character animations can be cartoonish or realistic based on the story requirements.
++ Do not overlap solution text with character dialogue or narration.
++ Add lip-syncing for character dialogue if applicable.
++ Use Node-based facial rigging for expressive animations.
++ Ensure generate the rig for character model.
++ Ensure the character can walk, run, jump, and perform actions required by the story.
++ Apply all kind of required settings to make it real in the animation.
 + Use mathutils when required.
 + Make use of 'Compositing' and Node or Use Nodes to give special effects like glare or bloom. Refer to https://docs.blender.org/manual/en/latest/compositing/types/filter/glare.html.
 + Use explicit datablock creation via bpy.data.*.new() and link with scene.collection.objects.link(obj).
-- Do NOT use scene.eevee_next.use_bloom = True.
-- Do NOT use bpy.ops.* or selection-dependent patterns (no active_object, no selected_objects).
-- Do NOT use BLENDER_EEVEE. Use anyone of these ('BLENDER_EEVEE_NEXT', 'BLENDER_WORKBENCH', 'CYCLES') based on the requirement.
++ Do NOT use scene.eevee_next as Scene object has no attribute 'eevee_next' instead use scene.eevee
++ Do NOT use bpy.ops.* or selection-dependent patterns (no active_object, no selected_objects).
++ Do NOT use if "Collection" in bpy.data.collections: → ❌ invalid, because __contains__ expects a Collection datablock, not a string.
++ Do NOT use BLENDER_EEVEE. Use anyone of these ('BLENDER_EEVEE_NEXT', 'BLENDER_WORKBENCH', 'CYCLES') based on the requirement.
++ Use bpy.ops.mesh.primitive_cylinder_add(radius=1, depth=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1)) to create cylinder. Feel free to tune the parameters as per the requirement.
++ Always add helper function like ensure_rgba to automatically expand 3‑tuples into 4‑tuples when necessary.
++ use glare_node = nodes.new('CompositorNodeFilterGlare')
++ Simplify node clearing with nodes.clear()
++ Use blend_method not shadow_method. shadow_method is no longer valid in Blender 4.x.
++ Do NOT use material.use_shadow (removed in Blender 4.x).
++ obj.hide_render is just a Python bool property (True/False). You need to call .keyframe_insert() on the object, not on the boolean. The data_path argument tells Blender which property to keyframe: obj.keyframe_insert("hide_render", frame=...)
 + Idempotency: check for existing datablocks by name before creating; reuse or safely remove with do_unlink.
 + Encapsulate logic in main(); call with if __name__ == "__main__": main()
 + Provide generic helpers only if needed (e.g., ensure_collection(name), link_object(obj, collection=None), clean_scene()).
@@ -396,8 +535,7 @@ API correctness notes:
 + **Refer to the https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
 + **Text objects**: animate transform or material properties; do NOT keyframe text body (not animatable).
 + **BMesh primitives**: use documented operators and parameters; e.g., bmesh.ops.create_cone(..., radius1=r, radius2=r) for cylinders; bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=1.0, matrix=mathutils.Matrix.Identity(4), calc_uvs=True).
-+ **Scene cleaning**: operate on bpy.context.view_layer.objects; remove via bpy.data.objects.remove(obj, do_unlink=True); avoid selection/mode operators.
-+ **Cameras & lights**: create via datablocks; animate location/rotation/energy; ensure cinematic motion (pans, dollies, arcs).
++ **Scene cleaning**: operate on bpy.context.view_layer.objects; remove via bpy.data.objects.remove(obj, do_unlink=True); avoid
 
 **Generic reasoning steps:**
 + Parse the animation_story and schema (characters, setting, key_visuals, camera_style, quality_cues).

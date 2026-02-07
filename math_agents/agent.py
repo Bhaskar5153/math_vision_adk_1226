@@ -36,13 +36,6 @@ SESSION_ID = "123344"
 MODEL = "gemini-2.5-flash"
 
 
-# INITIAL_STATE = {
-#     "topic": "algebra",
-#     "math_domain": "",
-#     "solution": "",
-#     "animation_story": "",
-#     "blender_code": "",
-# }
 
 
 # --- Configure Logging ---
@@ -196,10 +189,7 @@ class SupervisorAgent(BaseAgent):
             return
         
 
-        # 1. Initialize domain classify agent
-        # async for event in run_with_retry(self.domain_classify_agent, ctx):
-        #     logger.info(f"[{self.name}] Event from DomainClassifyAgent: {event.model_dump_json(indent=2, exclude_none=True)}")
-        #     yield event
+       
 
         # use the run_with_retry method to call domain_classify_agent
         async for event in SupervisorAgent.run_with_retry(self.domain_classify_agent, ctx):
@@ -356,19 +346,6 @@ root_agent = SupervisorAgent(
     blender_code_agent=blender_code_agent,
 )
 
-# INITIAL_STATE = {"topic": "user_topic"}
-
-# --- Setup Runner and Session ---
-# async def setup_session_and_runner():
-#     session_service = InMemorySessionService()
-#     session = await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID, state=INITIAL_STATE)
-#     logger.info(f"Initial session state: {session.state}")
-#     runner = Runner(
-#         agent=root_agent, # Pass the custom orchestrator agent
-#         app_name=APP_NAME,
-#         session_service=session_service
-#     )
-#     return session_service, runner
 
 
 INITIAL_STATE = {

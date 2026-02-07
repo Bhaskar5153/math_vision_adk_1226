@@ -529,6 +529,43 @@ Strict rules:
 + Only keyframe **animatable properties** documented in Blender API (object.location, object.rotation_euler, object.scale, light.energy, camera.lens, node socket default_value).
 - Never keyframe non-animatable properties (e.g., active_material_index, names, indices, text body).
 
++ For sports or match‑style problems (e.g., cricket, football, basketball), emulate broadcast graphics:
+  * Scoreboard overlays with animated text reveals.
+  * Boundary/goal highlights with scaling, glowing, or flashing effects.
+  * Percentage/statistical values should animate smoothly (count‑up or bar fill).
+  * Camera motion should mimic broadcast replays (tracking shots, zooms, dolly‑ins).
+
++ Camera motion must include:
+  * Ease‑in/ease‑out interpolation for smoothness.
+  * Multi‑angle storytelling (wide → close‑up → tracking).
+  * Broadcast‑style pans and dolly zooms for emphasis.
+
++ Lighting cues:
+  * Stadium floodlights for outdoor sports.
+  * Spotlights for dramatic reveals.
+  * Glow/emission for celebratory highlights (e.g., boundary fireworks).
++ Materials:
+  * Grass, asphalt, fabric, metal, glass with PBR realism.
+  * Use emission nodes for glowing text or props.
+
++ Text animation rules:
+  * Do NOT keyframe text body (not animatable).
+  * Animate text via scale, location, rotation, or material alpha/emission.
+  * Use frame handlers for dynamic text updates (e.g., score increments).
+
+Example 3:
+Solution: "Percentage of runs from boundaries is 69.23%."
+Story: "A cricket scoreboard lights up as boundaries are hit, with numbers counting up dynamically."
+Schema:
+{
+  "characters":[{"name":"Batsman","type":"human","traits":["focused","athletic"],"role":"player"}],
+  "setting":{"location":"stadium","time":"night","mood":"energetic","environment":["pitch","scoreboard","crowd"]},
+  "key_visuals":["scoreboard overlay","boundary highlight","percentage counter rising"],
+  "camera_style":{"shots":["wide shot of stadium","close-up scoreboard"],"motion":["tracking shot","zoom on scoreboard","dolly-in on percentage"]},
+  "quality_cues":{"lighting":"stadium floodlights with glow","materials":["grass","fabric","metal","LED screen"],"motion_style":["count-up animation","flash highlights"],"environment_scale":"stadium-scale"}
+}
+
+
 API correctness notes:
 + **Materials & Principled BSDF**: use correct sockets (e.g., 'Base Color', 'Emission Color', 'Emission Strength', 'Alpha'); set material.blend_method='BLEND' when alpha < 1.0.
 + **Keyframing node sockets**: call keyframe_insert("default_value") on the **socket object** (e.g., bsdf.inputs["Emission Strength"].keyframe_insert("default_value", frame=...)); do NOT use string paths like "inputs[...]".

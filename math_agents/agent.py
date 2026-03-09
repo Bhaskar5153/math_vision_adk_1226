@@ -33,7 +33,7 @@ import google.genai.errors
 APP_NAME = "math_animation_app"
 USER_ID = "12345"
 SESSION_ID = "123344"
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-2.5-pro"
 
 
 
